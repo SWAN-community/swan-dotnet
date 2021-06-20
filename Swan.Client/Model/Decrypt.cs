@@ -29,7 +29,7 @@ namespace Swan.Client.Model
         /// </summary>
         public string Encrypted { get; set; }
 
-        internal Decrypt(IConnection connection) : base(connection)
+        internal Decrypt(ISwanConnection connection) : base(connection)
         {
         }
 

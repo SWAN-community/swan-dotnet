@@ -27,7 +27,7 @@ using System.Threading.Tasks;
 
 namespace Swan.Client
 {
-    internal static class Internal
+    internal static class InternalExtensions
     {
         private static readonly HttpClientHandler GzipHttpHandler = 
             new HttpClientHandler()
@@ -68,7 +68,13 @@ namespace Swan.Client
             var client = new HttpClient(GzipHttpHandler);
             var content = new FormUrlEncodedContent(parameters);
             var response = await client.PostAsync(u.Uri, content);
-            response.EnsureSuccessStatusCode();
+            if (response.StatusCode != HttpStatusCode.OK)
+            {
+                throw new HttpRequestException(
+                    await response.Content.ReadAsStringAsync(),
+                    null,
+                    response.StatusCode);
+            }
             return response;
         }
 

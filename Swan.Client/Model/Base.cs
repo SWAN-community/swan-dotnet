@@ -14,8 +14,6 @@
  * under the License.
  * ***************************************************************************/
 
-using System.Collections.Generic;
-
 namespace Swan.Client.Model
 {
     /// <summary>
@@ -25,12 +23,12 @@ namespace Swan.Client.Model
     /// </summary>
     public class Base
     {
-        internal readonly IConnection Connection;
+        internal readonly ISwanConnection Connection;
 
         internal Base()
         { }
 
-        internal Base(IConnection connection)
+        internal Base(ISwanConnection connection)
         {
             Connection = connection;
         }

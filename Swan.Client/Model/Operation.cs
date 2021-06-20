@@ -118,27 +118,37 @@ namespace Swan.Client.Model
 		{
 		}
 
-		internal Operation(IConnection connection): base (connection)
+		public Operation(Operation operation) : base()
+		{
+			Copy(operation);
+		}
+
+		internal Operation(ISwanConnection connection): base (connection)
 		{
 		}
 
-		internal Operation(IConnection connection, Operation operation) 
+		internal Operation(ISwanConnection connection, Operation operation) 
 			: this(connection)
         {
-			AccessNode = operation.AccessNode;
-			BackgroundColor = operation.BackgroundColor;
-			DisplayUserInterface = operation.DisplayUserInterface;
-			JavaScript = operation.JavaScript;
-			Message = operation.Message;
-			MessageColor = operation.MessageColor;
-			NodeCount = operation.NodeCount;
-			PostMessageOnComplete = operation.PostMessageOnComplete;
-			ProgressColor = operation.ProgressColor;
-			ReturnUrl = operation.ReturnUrl;
-			State = operation.State;
-			Title = operation.Title;
-			UseHomeNode = operation.UseHomeNode;
-		}
+            Copy(operation);
+        }
+
+        private void Copy(Operation operation)
+        {
+            AccessNode = operation.AccessNode;
+            BackgroundColor = operation.BackgroundColor;
+            DisplayUserInterface = operation.DisplayUserInterface;
+            JavaScript = operation.JavaScript;
+            Message = operation.Message;
+            MessageColor = operation.MessageColor;
+            NodeCount = operation.NodeCount;
+            PostMessageOnComplete = operation.PostMessageOnComplete;
+            ProgressColor = operation.ProgressColor;
+            ReturnUrl = operation.ReturnUrl;
+            State = operation.State;
+            Title = operation.Title;
+            UseHomeNode = operation.UseHomeNode;
+        }
 
         internal override void SetData(
 			List<KeyValuePair<string, string>> parameters)

@@ -19,11 +19,18 @@ using Swan.Client.Model;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System;
+using System.Text.RegularExpressions;
 
 namespace Swan.Client
 {
     public static class Extensions
     {
+        /// <summary>
+        /// Gets the last Base64 characters from a string.
+        /// </summary>
+        private static readonly Regex _base64End = new Regex(
+            @"[a-zA-Z\d_-]+$", RegexOptions.Compiled);
+
         /// <summary>
         /// GetURL contacts the SWAN operator domain with the access key and 
         /// returns a URL string that the web browser should be immediately 
@@ -50,6 +57,19 @@ namespace Swan.Client
             return await update.RequestAsString("update", parameters);
         }
 
+        /// <summary>
+        /// GetURL contacts the SWAN operator domain with the access key and 
+        /// returns a URL string that the web browser should be directed to.
+        /// </summary>
+        /// <param name="stop"></param>
+        /// <returns></returns>
+        public static async Task<string> GetURL(this Stop stop)
+        {
+            var parameters = new List<KeyValuePair<string, string>>();
+            stop.SetData(parameters);
+            return await stop.RequestAsString("stop", parameters);
+        }
+
         public static async Task<Pair[]> Decrypt(this Decrypt decrypt)
         {
             var parameters = new List<KeyValuePair<string, string>>();
@@ -71,6 +91,45 @@ namespace Swan.Client
             return await JsonSerializer.DeserializeAsync<Update>(stream);
         }
 
+        public static async Task<string> HomeNode(this Model.Client client)
+        {
+            var parameters = new List<KeyValuePair<string, string>>();
+            client.SetData(parameters);
+            return await client.RequestAsString(
+                "home-node",
+                parameters);
+        }
+
+        public static async Task<Owid.Client.Model.Owid> CreateSwid(
+            this ISwanConnection connection)
+        {
+            var byteArray = await new Base(connection).RequestAsByteArray(
+                "create-swid", 
+                new List<KeyValuePair<string, string>>());
+            return new Owid.Client.Model.Owid(byteArray);
+        }
+
+        /// <summary>
+        /// Returns the encrypted part of the Uri.
+        /// </summary>
+        /// <param name="uri"></param>
+        /// <returns></returns>
+        public static string GetEncrypted(this Uri uri)
+        {
+            var match = _base64End.Match(uri.OriginalString);
+            if (match.Success)
+            {
+                return match.Value;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Returns the string that has been appended to the return Url.
+        /// </summary>
+        /// <param name="uri"></param>
+        /// <param name="returnUrl"></param>
+        /// <returns></returns>
         public static string GetEncrypted(this Uri uri, string returnUrl)
         {
             if (uri == null)

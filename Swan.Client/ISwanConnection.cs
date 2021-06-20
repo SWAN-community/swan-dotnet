@@ -16,10 +16,11 @@
 using Microsoft.AspNetCore.Http;
 using Swan.Client.Model;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Swan.Client
 {
-    public interface IConnection
+    public interface ISwanConnection
     {
         /// <summary>
         /// The HTTP or HTTPS scheme to use for SWAN requests
@@ -52,7 +53,7 @@ namespace Swan.Client
         Fetch Fetch(
             HttpRequest request, 
             string returnUrl, 
-            IEnumerable<Pair> existing);
+            IEnumerable<Pair> existing = null);
 
         /// <summary>
         /// NewUpdate creates a new fetch operation using the default in the 
@@ -63,7 +64,19 @@ namespace Swan.Client
         /// return URL after the operation completes
         /// </param>
         /// <returns></returns>
-        Update NewUpdate(HttpRequest request, string returnUrl);
+        Update Update(HttpRequest request, string returnUrl);
+
+        // <summary>
+        /// NewUpdate creates a new fetch operation using the values contained
+        /// in the source update object.
+        /// </summary>
+        /// <param name="request">http request from a web browser</param>
+        /// <param name="source">
+        /// Values of properties to use for the new update operation.
+        /// <returns>
+        /// A new update operation connected to the connection.
+        /// </returns>
+        Update Update(HttpRequest request, Update source);
 
         /// <summary>
         /// NewStop creates a new stop operation using the default in the 
@@ -75,7 +88,7 @@ namespace Swan.Client
         /// </param>
         /// <param name="host">associated with the advert to stop</param>
         /// <returns></returns>
-        Stop NewStop(HttpRequest request, string returnUrl, string host);
+        Stop Stop(HttpRequest request, string returnUrl, string host);
 
         // request http request from a web browser
         /// <summary>
@@ -94,5 +107,22 @@ namespace Swan.Client
         /// </param>
         /// <returns></returns>
         Decrypt NewDecrypt(string encrypted);
+
+        /// <summary>
+        /// Decrypt returns SWAN key value pairs for the data contained in the
+        /// encrypted string.
+        /// </summary>
+        /// <param name="encrypted"></param>
+        /// <returns></returns>
+        Task<Pair[]> Decrypt(string encrypted);
+
+        /// <summary>
+        /// DecryptRaw returns key value pairs for the raw SWAN data contained 
+        /// in the encrypted string. Must only be used by User Interface 
+        /// Providers.
+        /// </summary>
+        /// <param name="encrypted"></param>
+        /// <returns></returns>
+        Task<Update> DecryptRaw(string encrypted);
     }
 }

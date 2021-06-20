@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Owid\Owid.Client\Owid.Client.csproj" />
+    <ProjectReference Include="..\Swan.Client.Controllers\Swan.Client.Controllers.csproj" />
     <ProjectReference Include="..\Swan.Client\Swan.Client.csproj" />
   </ItemGroup>
 

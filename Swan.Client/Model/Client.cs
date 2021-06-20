@@ -17,6 +17,7 @@
 using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace Swan.Client.Model
 {
@@ -30,13 +31,14 @@ namespace Swan.Client.Model
         /// <summary>
         /// The HTTP request from the web browser
         /// </summary>
+        [JsonIgnore]
         public HttpRequest Request { get; set; }
 
         protected Client() : base()
         { 
         }
 
-        public Client(IConnection connection) : base (connection)
+        public Client(ISwanConnection connection) : base (connection)
         {
         }
 

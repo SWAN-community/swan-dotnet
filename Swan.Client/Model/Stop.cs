@@ -14,6 +14,8 @@
  * under the License.
  * ***************************************************************************/
 
+using System.Collections.Generic;
+
 namespace Swan.Client.Model
 {
     /// <summary>
@@ -26,13 +28,20 @@ namespace Swan.Client.Model
         /// </summary>
         public string Host { get; set; }
 
-        public Stop(IConnection connection) : base(connection)
+        public Stop(ISwanConnection connection) : base(connection)
         {
         }
 
-        internal Stop(IConnection connection, Operation operation)
+        internal Stop(ISwanConnection connection, Operation operation)
             : base(connection, operation)
         {
+        }
+
+        internal override void SetData(
+            List<KeyValuePair<string, string>> parameters)
+        {
+            base.SetData(parameters);
+            parameters.Set("host", Host);
         }
     }
 }

@@ -15,14 +15,18 @@
  * ***************************************************************************/
 
 using Microsoft.AspNetCore.Http;
+using Owid.Client;
 using Swan.Client.Model;
+using Swan.Client.Model.Configuration;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 
 namespace Swan.Client
 {
-    public class Connection : IConnection
+    public class SwanConnection : ISwanConnection
     {
         /// <summary>
         /// The HTTP or HTTPS scheme to use for SWAN requests
@@ -39,23 +43,65 @@ namespace Swan.Client
         /// </summary>
         public string AccessKey { get; }
 
+        /// <summary>
+        /// Template details for any new storage operation.
+        /// </summary>
         private readonly Operation _operation = null;
-    
-        public Connection(string scheme, string accessNode, string accessKey)
-            : this (scheme, accessNode, accessKey, new Operation())
+
+        /// <summary>
+        /// Creator used with <see cref="Model.Update"/> update actions. If not 
+        /// provided then update actions will throw an exception.
+        /// </summary>
+        private readonly Creator _creator;
+
+        public SwanConnection(SwanConfiguration configuration)
+            : this (
+                  configuration.Scheme,
+                  configuration.AccessNode,
+                  configuration.AccessKey,
+                  new Creator(configuration.OwidConfiguration))
         {
         }
 
-        public Connection(
+
+        public SwanConnection(
+            string scheme, 
+            string accessNode,
+            string accessKey,
+            Creator creator)
+            : this (scheme, accessNode, accessKey, creator, new Operation())
+        {
+        }
+
+        public SwanConnection(
             string scheme, 
             string accessNode, 
-            string accessKey, 
+            string accessKey,
+            Creator creator,
             Operation operation)
         {
             Scheme = scheme;
             AccessNode = accessNode;
             AccessKey = accessKey;
+            _creator = creator;
             _operation = operation;
+        }
+
+        public SwanConnection(
+            string scheme,
+            string accessNode,
+            string accessKey)
+            : this(scheme, accessNode, accessKey, null, new Operation())
+        {
+        }
+
+        public SwanConnection(
+            string scheme,
+            string accessNode,
+            string accessKey,
+            Operation operation)
+            : this (scheme, accessNode, accessKey, null, operation)
+        { 
         }
 
         public Model.Client NewClient(HttpRequest request)
@@ -66,6 +112,12 @@ namespace Swan.Client
             };
         }
 
+        /// <summary>
+        /// NewDecrypt creates a new decrypt request using the default in the
+        /// connection.
+        /// </summary>
+        /// <param name="encrypted"></param>
+        /// <returns></returns>
         public Decrypt NewDecrypt(string encrypted)
         {
             return new Decrypt(this)
@@ -113,7 +165,7 @@ namespace Swan.Client
             };
         }
 
-        public Stop NewStop(HttpRequest request, string returnUrl, string host)
+        public Stop Stop(HttpRequest request, string returnUrl, string host)
         {
             return new Stop(this, _operation)
             {
@@ -123,9 +175,17 @@ namespace Swan.Client
             };
         }
 
-        public Update NewUpdate(HttpRequest request, string returnUrl)
+        public Update Update(HttpRequest request, Update source)
         {
-            return new Update(this, _operation)
+            return new Update(this, _creator, source)
+            {
+                Request = request,
+            };
+        }
+
+        public Update Update(HttpRequest request, string returnUrl)
+        {
+            return new Update(this, _creator, _operation)
             {
                 Request = request,
                 ReturnUrl = returnUrl

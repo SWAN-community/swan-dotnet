@@ -29,7 +29,7 @@ namespace Swan.Client.Model
         /// </summary>
         public Pair[] Existing { get; set; }
 
-        internal Fetch(IConnection connection, Operation operation) 
+        internal Fetch(ISwanConnection connection, Operation operation) 
             : base(connection, operation)
         {
         }
@@ -50,6 +50,5 @@ namespace Swan.Client.Model
                 }
             }
         }
-
     }
 }

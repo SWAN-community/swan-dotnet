@@ -14,76 +14,44 @@
  * under the License.
  * ***************************************************************************/
 
-using Microsoft.AspNetCore.Http;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Owid.Client;
 using Swan.Client.Model;
 using System;
-using System.Net;
-using System.Net.Http;
-using System.Text.RegularExpressions;
+using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
-using Owid.Client;
 
 namespace Swan.Client.Test
 {
     [TestClass]
-    public class Actions
+    public class Actions : Base
     {
-        private const string Scheme = "https";
-        private const string AccessNode = "51db.uk";
-        private const string BadAccessNode = "51dz.uk";
-        private const string AccessKey = "CMPKeySWAN";
-        private const string BadAccessKey = "_CMPKeySWAN";
-        private const string ReturnUrl = "https://test.com/index.html";
-        private const string BadReturnUrl = "http*://test.com/index.html";
-        private static readonly Operation _operation = new Operation()
+        [TestMethod]
+        public async Task TestCreateSwid()
         {
-            BackgroundColor = "white",
-            DisplayUserInterface = true,
-            JavaScript = false,
-            Message = "Testing is essential",
-            MessageColor = "black",
-            NodeCount = 1,
-            PostMessageOnComplete = false,
-            ProgressColor = "blue",
-            Title = "Testing",
-            UseHomeNode = true
-        };
+            var swid = await _connection.CreateSwid();
+            Assert.IsNotNull(swid);
+            Assert.AreEqual(swid.Domain, Base.AccessNode);
+            Assert.IsTrue(await swid.VerifyAsync());
+        }
 
-        private static readonly Regex _uriRegex = new Regex(
-            @"http[s]://[^\""']+",
-            RegexOptions.Compiled);
-        private static readonly HttpContext _httpContext = 
-            new DefaultHttpContext();
-        private static readonly HttpClient _client = new HttpClient(
-            new HttpClientHandler()
-            {
-                AutomaticDecompression =
-                    DecompressionMethods.GZip | DecompressionMethods.Deflate
-            });
-
-        private Connection _connection;
-        private Connection _badAccessNodeConnection;
-        private Connection _badAccessKeyConnection;
-
-        [TestInitialize]
-        public void TestInitialize()
+        [TestMethod]
+        public async Task TestHomeNode()
         {
-            _connection = new Connection(
-                Scheme,
-                AccessNode,
-                AccessKey,
-                _operation);
-            _badAccessNodeConnection = new Connection(
-                Scheme,
-                BadAccessNode,
-                AccessKey,
-                _operation);
-            _badAccessKeyConnection = new Connection(
-                Scheme,
-                AccessNode,
-                BadAccessKey,
-                _operation);
+            var homeNode = await _connection.NewClient(
+                Base._httpContext.Request).HomeNode();
+            Assert.IsNotNull(homeNode);
+        }
+
+        [TestMethod]
+        public async Task TestStop()
+        {
+            var first = await _connection.Stop(
+                _httpContext.Request,
+                ReturnUrl,
+                StopDomain).GetURL();
+            Assert.IsNotNull(first);
         }
 
         [TestMethod]
@@ -148,38 +116,65 @@ namespace Swan.Client.Test
         [TestMethod]
         public async Task TestUpdate()
         {
-            var first = await _connection.NewUpdate(
+            var url = await _connection.Update(
                 _httpContext.Request,
                 ReturnUrl).GetURL();
-            Assert.IsNotNull(first);
-            var second = await _connection.NewUpdate(
-                _httpContext.Request,
-                ReturnUrl).GetURL();
-            Assert.IsNotNull(second);
-            Assert.AreNotEqual(first, second);
+            Assert.IsNotNull(url);
+        }
+
+        [TestMethod]
+        public async Task TestUpdateDecrypt()
+        {
+            var pairs = await _connection.Decrypt(
+                await GetEncryptedUpdateData());
+            var owid = new Owid.Client.Model.Owid(
+                pairs.Single(i => "swid".Equals(i.Key)).Value);
+            Assert.IsTrue(await owid.VerifyAsync());
         }
 
         [TestMethod]
         public async Task TestDecrypt()
         {
-            var pairs = await _connection.Decrypt(await GetEncryptedData());
+            var pairs = await _connection.Decrypt(
+                await GetEncryptedFetchData());
             Assert.IsNotNull(pairs);
         }
 
         [TestMethod]
         public async Task TestDecryptRaw()
         {
-            var update = await _connection.DecryptRaw(await GetEncryptedData());
+            var update = await _connection.DecryptRaw(
+                await GetEncryptedFetchData());
             Assert.IsNotNull(update);
-            Assert.IsNotNull(update.SwidAsString);
+            Assert.IsNotNull(update.Swid);
         }
 
         [TestMethod]
         public async Task TestSwid()
         {
-            var update = await _connection.DecryptRaw(await GetEncryptedData());
-            var success = await update.Swid.VerifyAsync();
+            var update = await _connection.DecryptRaw(
+                await GetEncryptedFetchData());
+            var success = await update.SwidAsOwid.VerifyAsync();
             Assert.IsTrue(success);
+        }
+
+        [TestMethod]
+        public void TestUpdateEmail()
+        {
+            var update = _connection.Update(
+                _httpContext.Request,
+                ReturnUrl);
+            update.Email = Base.Email;
+            Assert.IsNotNull(update.EmailAsOwid);
+        }
+
+        [TestMethod]
+        public void TestUpdateEmailBadConnection()
+        {
+            Assert.ThrowsException<ArgumentException>(() =>
+                _badRsaConnection.Update(
+                    _httpContext.Request,
+                    ReturnUrl));
         }
 
         /// <summary>
@@ -188,29 +183,36 @@ namespace Swan.Client.Test
         /// the encrypted result for use in decrypt operations.
         /// </summary>
         /// <returns></returns>
-        private async Task<string> GetEncryptedData()
+        private async Task<string> GetEncryptedFetchData()
         {
-            // Get the redirect URL.
             var fetch = _connection.Fetch(
                 _httpContext.Request,
                 ReturnUrl);
             var redirectUrl = await fetch.GetURL();
             Assert.IsNotNull(redirectUrl);
             Uri uri;
-            Assert.IsTrue(Uri.TryCreate(redirectUrl, UriKind.Absolute, out uri));
-
-            // Call the redirect URL as if the browser was performing the
-            // request and get the encrypted string from the response.
-            var response = await _client.GetAsync(uri);
-            var html = await response.Content.ReadAsStringAsync();
-            var encryptUrl = _uriRegex.Match(html);
-            Assert.IsNotNull(encryptUrl);
-            Assert.IsTrue(encryptUrl.Success);
             Assert.IsTrue(Uri.TryCreate(
-                encryptUrl.Value,
+                redirectUrl,
                 UriKind.Absolute,
                 out uri));
-            return uri.GetEncrypted(fetch.ReturnUrl);
+            return (await GetEncryptedData(uri)).GetEncrypted(
+                fetch.ReturnUrl);
+        }
+
+        private async Task<string> GetEncryptedUpdateData()
+        {
+            var update = _connection.Update(
+                _httpContext.Request,
+                ReturnUrl);
+            var redirectUrl = await update.GetURL();
+            Assert.IsNotNull(redirectUrl);
+            Uri uri;
+            Assert.IsTrue(Uri.TryCreate(
+                redirectUrl,
+                UriKind.Absolute,
+                out uri));
+            return (await GetEncryptedData(uri)).GetEncrypted(
+                update.ReturnUrl);
         }
     }
 }
