@@ -16,12 +16,11 @@
 
 using Microsoft.AspNetCore.Http;
 using Owid.Client;
+using Owid.Client.Model.Configuration;
 using Swan.Client.Model;
 using Swan.Client.Model.Configuration;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Threading.Tasks;
 
 namespace Swan.Client
@@ -54,12 +53,14 @@ namespace Swan.Client
         /// </summary>
         private readonly Creator _creator;
 
-        public SwanConnection(SwanConfiguration configuration)
+        public SwanConnection(
+            SwanConfiguration swan,
+            OwidConfiguration owid)
             : this (
-                  configuration.Scheme,
-                  configuration.AccessNode,
-                  configuration.AccessKey,
-                  new Creator(configuration.OwidConfiguration))
+                  swan.Scheme,
+                  swan.AccessNode,
+                  swan.AccessKey,
+                  new Creator(owid))
         {
         }
 

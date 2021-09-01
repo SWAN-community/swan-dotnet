@@ -18,10 +18,5 @@ namespace Swan.Client.Model.Configuration
         /// SWAN access key provided by the SWAN Operator
         /// </summary>
         public string AccessKey { get; set; }
-
-        /// <summary>
-        /// OWID creator configuration.
-        /// </summary>
-        public OwidConfiguration OwidConfiguration { get; set; }
     }
 }
