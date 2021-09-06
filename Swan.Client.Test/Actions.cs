@@ -16,7 +16,6 @@
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Owid.Client;
-using Swan.Client.Model;
 using System;
 using System.Linq;
 using System.Text;
@@ -127,9 +126,30 @@ namespace Swan.Client.Test
         {
             var pairs = await _connection.Decrypt(
                 await GetEncryptedUpdateData());
-            var owid = new Owid.Client.Model.Owid(
+            var swid = new Owid.Client.Model.Owid(
                 pairs.Single(i => "swid".Equals(i.Key)).Value);
-            Assert.IsTrue(await owid.VerifyAsync());
+            var sid = new Owid.Client.Model.Owid(
+                pairs.Single(i => "sid".Equals(i.Key)).Value);
+            var pref = new Owid.Client.Model.Owid(
+                pairs.Single(i => "pref".Equals(i.Key)).Value);
+            var val = pairs.Single(i => "val".Equals(i.Key));
+            Assert.IsTrue(await swid.VerifyAsync());
+            Assert.IsTrue(await sid.VerifyAsync());
+            Assert.IsTrue(await pref.VerifyAsync(_creator.RSA));
+            DateTime valDate = DateTime.MinValue;
+            Assert.IsTrue(DateTime.TryParse(val.Value, out valDate));
+            Assert.AreNotEqual(DateTime.MinValue, valDate);
+        }
+
+        [TestMethod]
+        public async Task TestUpdateDecryptRaw()
+        {
+            var pairs = await _connection.DecryptRaw(
+                await GetEncryptedUpdateData());
+            Assert.AreEqual(Email, pairs.Email);
+            Assert.AreEqual(Preference, pairs.Pref);
+            Assert.AreEqual(Salt, pairs.Salt);
+            Assert.IsTrue(await pairs.SwidAsOwid.VerifyAsync());
         }
 
         [TestMethod]
@@ -195,7 +215,7 @@ namespace Swan.Client.Test
                 redirectUrl,
                 UriKind.Absolute,
                 out uri));
-            return (await GetEncryptedData(uri)).GetEncrypted(
+            return (await uri.MockBrowserRedirect()).GetEncrypted(
                 fetch.ReturnUrl);
         }
 
@@ -204,6 +224,9 @@ namespace Swan.Client.Test
             var update = _connection.Update(
                 _httpContext.Request,
                 ReturnUrl);
+            update.Email = Email;
+            update.Salt = Salt;
+            update.Pref = Preference;
             var redirectUrl = await update.GetURL();
             Assert.IsNotNull(redirectUrl);
             Uri uri;
@@ -211,7 +234,7 @@ namespace Swan.Client.Test
                 redirectUrl,
                 UriKind.Absolute,
                 out uri));
-            return (await GetEncryptedData(uri)).GetEncrypted(
+            return (await uri.MockBrowserRedirect()).GetEncrypted(
                 update.ReturnUrl);
         }
     }

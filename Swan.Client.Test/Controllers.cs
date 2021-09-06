@@ -106,7 +106,7 @@ namespace Swan.Client.Test
                 redirectUrl,
                 UriKind.Absolute,
                 out uri));
-            return await GetEncryptedData(uri);
+            return await uri.MockBrowserRedirect();
         }
     }
 }

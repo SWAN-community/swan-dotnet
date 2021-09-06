@@ -145,8 +145,7 @@ namespace Swan.Client
         /// </summary>
         /// <param name="encrypted"></param>
         /// <returns></returns>
-        public async Task<Update> DecryptRaw(
-            string encrypted)
+        public async Task<Update> DecryptRaw(string encrypted)
         {
             return await NewDecrypt(encrypted).DecryptRaw();
         }
