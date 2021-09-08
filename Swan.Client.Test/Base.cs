@@ -48,8 +48,8 @@ namespace Swan.Client.Test
         public void TestInitialize()
         {
             _creator = new Creator(
-                OwidDomain,
-                new RSACryptoServiceProvider(512));
+                OwidDomain, 
+                ECDsa.Create(ECCurve.NamedCurves.nistP256));
             _connection = new SwanConnection(
                 Scheme,
                 AccessNode,

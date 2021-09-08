@@ -135,7 +135,7 @@ namespace Swan.Client.Test
             var val = pairs.Single(i => "val".Equals(i.Key));
             Assert.IsTrue(await swid.VerifyAsync());
             Assert.IsTrue(await sid.VerifyAsync());
-            Assert.IsTrue(await pref.VerifyAsync(_creator.RSA));
+            Assert.IsTrue(await pref.VerifyAsync(_creator.Crypto));
             DateTime valDate = DateTime.MinValue;
             Assert.IsTrue(DateTime.TryParse(val.Value, out valDate));
             Assert.AreNotEqual(DateTime.MinValue, valDate);
